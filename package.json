@@ -1,0 +1,19 @@
+{
+  "workspaces": [
+    "app1",
+    "app2"
+  ],
+  "dependencies": {
+    "concurrently": "^7.0.0"
+  },
+  "version": "1.0.0",
+  "description": "My webpack project",
+  "name": "my-webpack-project",
+  "scripts": {
+    "start": "concurrently \"cd app1; npm start\" \"cd app2; npm start\" --kill-others",
+    "build:dev": "concurrently \"cd app1; npm run build:dev\" \"cd app2; npm run build:dev\"",
+    "build": "concurrently \"cd app1; npm run build\" \"cd app2; npm run build\" --kill-others",
+    "build:prod": "concurrently \"cd app1; npm run build:prod\" \"cd app2; npm run build:prod\" --kill-others",
+    "watch": "webpack --watch"
+  }
+}
