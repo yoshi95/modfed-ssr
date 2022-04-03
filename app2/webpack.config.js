@@ -43,7 +43,14 @@ const federatedModuleConfig = {
     rules: [
       {
         test: /\.(ts|tsx)$/i,
-        loader: "ts-loader",
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' }
+            }
+          }
+        },
         exclude: ["/node_modules/"],
       },
       {
@@ -96,7 +103,8 @@ const clientConfig = {
     }),
     new webpack.container.ModuleFederationPlugin({
       remotes: {
-        app1: 'app1@http://localhost:3001/app1/remoteEntry.js'
+        app1: 'app1@http://localhost:3001/app1/remoteEntry.js',
+        app2: 'app2@http://localhost:3002/app2/remoteEntry.js'
       },
       shared: {
         react: {
@@ -113,7 +121,14 @@ const clientConfig = {
     rules: [
       {
         test: /\.(ts|tsx)$/i,
-        loader: "ts-loader",
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' }
+            }
+          }
+        },
         exclude: ["/node_modules/"],
       },
       {
@@ -153,7 +168,15 @@ const serverConfig = {
     rules: [
       {
         test: /\.(ts|tsx)$/i,
-        loader: "ts-loader",
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' },
+              target: 'es2021'
+            }
+          }
+        },
         exclude: ["/node_modules/"],
       },
 

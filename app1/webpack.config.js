@@ -26,6 +26,9 @@ const federatedModuleConfig = {
     new webpack.container.ModuleFederationPlugin({
       name: 'app1',
       filename: 'remoteEntry.js',
+      remotes: {
+        app2: 'app2@http://localhost:3002/app2/remoteEntry.js'
+      },
       exposes: {
         './RemoteComponent': './src/components/RemoteComponent.tsx',
         './Marketing': './src/components/marketing/index.tsx'
@@ -44,7 +47,14 @@ const federatedModuleConfig = {
     rules: [
       {
         test: /\.(ts|tsx)$/i,
-        loader: "ts-loader",
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' }
+            }
+          }
+        },
         exclude: ["/node_modules/"],
       },
       {
@@ -114,7 +124,14 @@ const clientConfig = {
     rules: [
       {
         test: /\.(ts|tsx)$/i,
-        loader: "ts-loader",
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' }
+            }
+          }
+        },
         exclude: ["/node_modules/"],
       },
       {
@@ -154,7 +171,15 @@ const serverConfig = {
     rules: [
       {
         test: /\.(ts|tsx)$/i,
-        loader: "ts-loader",
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' },
+              target: 'es2021'
+            }
+          }
+        },
         exclude: ["/node_modules/"],
       },
 

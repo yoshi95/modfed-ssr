@@ -5,3 +5,7 @@ declare module 'app1/RemoteComponent' {
 declare module 'app1/Marketing' {
   export default React.Component
 }
+
+declare module 'app2/useApp2ConsoleMessage' {
+  export default function(msg: string): void
+}

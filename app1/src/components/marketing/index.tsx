@@ -1,18 +1,17 @@
-import React, { lazy, Suspense, useMemo } from 'react'
+import React, { PropsWithChildren, Suspense } from 'react'
+import useLazyComponent from '../../hooks/useLazyComponent'
 
 const Empty = (): null => null
-const Error = () => <h1>Error loading component!!!</h1>
 
-export default ({ color = 'green' }: {color?: string}) => {
-  const ColorComponent = useMemo(
-    () => lazy(() => import(`./color/${color}`)),
-    [color]
-  )
+export default ({ color = 'green', children }: PropsWithChildren<{color?: string}>) => {
+  const ColorComponent = useLazyComponent(color, import(`./color/${color}`))
   return (
     <>
       <h1>this is color: {color}</h1>
       <Suspense fallback={<Empty />}>
-        <ColorComponent msg={`this is ${color}`} />
+        <ColorComponent msg={`this is ${color}`}>
+          {children}
+        </ColorComponent>
       </Suspense>
     </>
   )

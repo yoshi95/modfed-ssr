@@ -15,5 +15,8 @@
     "build": "concurrently \"cd app1; npm run build\" \"cd app2; npm run build\" --kill-others",
     "build:prod": "concurrently \"cd app1; npm run build:prod\" \"cd app2; npm run build:prod\" --kill-others",
     "watch": "webpack --watch"
+  },
+  "devDependencies": {
+    "browserslist": "^4.20.2"
   }
 }
