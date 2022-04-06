@@ -1,8 +1,9 @@
 {
   "dependencies": {
     "express": "4.17.3",
-    "react": "18.0.0",
-    "react-dom": "18.0.0"
+    "node-fetch": "^2.6.7",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   },
   "devDependencies": {
     "@swc/core": "^1.2.162",
@@ -24,6 +25,7 @@
     "typescript": "^4.6.3",
     "webpack": "^5.70.0",
     "webpack-cli": "^4.9.2",
+    "webpack-manifest-plugin": "^5.0.0",
     "webpack-merge": "^5.8.0"
   },
   "version": "1.0.0",
@@ -31,7 +33,7 @@
   "name": "app1",
   "scripts": {
     "clean": "rm -rf dist",
-    "start": "node dist/main.js",
+    "start": "node dist/server/main.js",
     "build:dev": "npm run clean && webpack --mode=development",
     "build": "webpack --mode=production --node-env=production",
     "build:prod": "webpack --mode=production --node-env=production",

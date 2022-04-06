@@ -2,6 +2,7 @@
 
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const DynamicPublicPathPlugin = require('../plugins/dynamic-public-path-plugin')
 const webpack = require('webpack')
@@ -12,15 +13,19 @@ const stylesHandler = isProduction
   ? MiniCssExtractPlugin.loader
   : "style-loader";
 
+const publicPath = '/static'
+
 const federatedModuleConfig = {
   entry: "./noop.tsx",
   devtool: false,
   output: {
+    publicPath,
     path: path.resolve(__dirname, "dist/static/app2"),
   },
   plugins: [
+    new WebpackManifestPlugin(),
     new DynamicPublicPathPlugin({
-      iife: '(() => "http://localhost:3002/")',
+      iife: `(() => "http://localhost:3002${publicPath}/app2/")`,
       entry: '""'
     }),
     new webpack.container.ModuleFederationPlugin({
@@ -78,6 +83,7 @@ const clientConfig = {
   entry: "./src/index.ts",
   devtool: false,
   output: {
+    publicPath,
     path: path.resolve(__dirname, "dist/static"),
   },
   optimization: {
@@ -98,13 +104,13 @@ const clientConfig = {
       template: "index.html",
     }),
     new DynamicPublicPathPlugin({
-      iife: '(() => "http://localhost:3002/")',
+      iife: `(() => "http://localhost:3002${publicPath}/")`,
       entry: '""'
     }),
     new webpack.container.ModuleFederationPlugin({
       remotes: {
-        app1: 'app1@http://localhost:3001/app1/remoteEntry.js',
-        app2: 'app2@http://localhost:3002/app2/remoteEntry.js'
+        app1: `app1@http://localhost:3001${publicPath}/app1/remoteEntry.js`,
+        app2: `app2@http://localhost:3002${publicPath}/app2/remoteEntry.js`
       },
       shared: {
         react: {
@@ -185,7 +191,8 @@ const serverConfig = {
     ],
   },
   externals: {
-    express: 'require("express")'
+    express: 'require("express")',
+    'node-fetch': 'require("node-fetch")'
   },
   resolve: {
     extensions: [".tsx", ".ts", ".js"],

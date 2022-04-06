@@ -1,5 +1,13 @@
 {
+  "name": "gap-renderer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
+    "gap-renderer": "1.0.0",
     "express": "4.17.3",
     "node-fetch": "^2.6.7",
     "react": "^18.0.0",
@@ -28,15 +36,6 @@
     "webpack-manifest-plugin": "^5.0.0",
     "webpack-merge": "^5.8.0"
   },
-  "version": "1.0.0",
-  "description": "My webpack project",
-  "name": "app2",
-  "scripts": {
-    "clean": "rm -rf dist",
-    "start": "node dist/main.js",
-    "build": "webpack --mode=production --node-env=production",
-    "build:dev": "npm run clean && webpack --mode=development",
-    "build:prod": "webpack --mode=production --node-env=production",
-    "watch": "webpack --watch"
-  }
+  "author": "",
+  "license": "ISC"
 }

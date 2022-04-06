@@ -1,10 +1,7 @@
+
 import React from 'react'
-import { createRoot } from 'react-dom/client'
+import { client as renderer } from 'gap-renderer'
 import App from './components/App'
 
-export default () => {
-  const container = document.getElementById('app')
-  const root = createRoot(container)
-  root.render(<App />)
-}
+export default () => renderer(<App assets={(window as any).assetManifest}/>)
 

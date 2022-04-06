@@ -1,19 +1,7 @@
-declare module 'app1/RemoteComponent' {
-  export default React.Component
-}
-
-declare module 'app1/Marketing' {
-  export default React.Component
-}
-
-declare module 'app2/useApp2ConsoleMessage' {
-  export default function(msg: string): void
-}
-
 
 declare namespace React {
   export type ReactEmpty = null | void | boolean;
-  export type ReactNodeList = ReactEmpty | ReactNode;
+  export type ReactNodeList = ReactChild | Iterable<import('react').ReactNode>;
 }
 
 declare module 'react-dom/server' {
