@@ -4,8 +4,11 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const DynamicPublicPathPlugin = require('../plugins/dynamic-public-path-plugin')
 const webpack = require('webpack')
+
+const DynamicPublicPathPlugin = require('../plugins/dynamic-public-path-plugin')
+const PreloadRemoteDependenciesPlugin = require('../plugins/preload-remote-dependencies-plugin')
+const buildRemote = require('../plugins/remote-entry-builder');
 
 const isProduction = process.env.NODE_ENV == "production";
 
@@ -14,6 +17,7 @@ const stylesHandler = isProduction
   : "style-loader";
 
 const publicPath = '/static'
+const serverPublicPath = '/server'
 
 const federatedModuleConfig = {
   entry: "./noop.tsx",
@@ -100,9 +104,12 @@ const clientConfig = {
     }
   },
   plugins: [
+    /*
     new HtmlWebpackPlugin({
       template: "index.html",
     }),
+    */
+    new WebpackManifestPlugin(),
     new DynamicPublicPathPlugin({
       iife: `(() => "http://localhost:3002${publicPath}/")`,
       entry: '""'
@@ -159,14 +166,136 @@ const clientConfig = {
   },
 };
 
+debugger;
+
+const serverFederatedModuleConfig = {
+  entry: "./noop.tsx",
+  devtool: false,
+  target: 'node',
+  output: {
+    chunkFormat: false,
+    publicPath: `${serverPublicPath}/app2`,
+    path: path.resolve(__dirname, "dist/server/app2")
+  },
+  plugins: [
+    new WebpackManifestPlugin(),
+    new DynamicPublicPathPlugin({
+      iife: `(() => "http://localhost:3002${serverPublicPath}/app2/")`,
+      entry: '""'
+    }),
+    new webpack.container.ModuleFederationPlugin({
+      name: 'app2',
+      filename: 'remoteEntry.js',
+      library: {
+        type: 'commonjs2'
+      },
+      remotes: {
+        app1: buildRemote(
+          'app1',
+          `http://localhost:3001${serverPublicPath}/app1/remoteEntry.js`
+        )
+      },
+      exposes: {
+        './useApp2ConsoleMessage': './src/hooks/app2Hook.ts',
+      },
+      shared: {
+        react: {
+          import: false,
+          requiredVersion: false,
+          singleton: true,
+        }
+      },
+    }),
+    // limit remoteEntry cunk to be 1, because this is for server
+    new webpack.optimize.LimitChunkCountPlugin({
+      maxChunks: 2
+    }),
+    // needs to preload remote dependencies now remoteEntry is bundled into 1 chunk
+    new PreloadRemoteDependenciesPlugin()
+    // Add your plugins here
+    // Learn more about plugins from https://webpack.js.org/configuration/plugins/
+  ],
+  module: {
+    rules: [
+      {
+        test: /\.(ts|tsx)$/i,
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: { syntax: 'typescript' }
+            }
+          }
+        },
+        exclude: ["/node_modules/"],
+      },
+      {
+        test: /\.css$/i,
+        use: [stylesHandler, "css-loader"],
+      },
+      {
+        test: /\.s[ac]ss$/i,
+        use: [stylesHandler, "css-loader", "sass-loader"],
+      },
+      {
+        test: /\.(eot|svg|ttf|woff|woff2|png|jpg|gif)$/i,
+        type: "asset",
+      },
+
+      // Add your rules for custom modules here
+      // Learn more about loaders from https://webpack.js.org/loaders/
+    ],
+  },
+  resolve: {
+    extensions: [".tsx", ".ts", ".js"],
+  }
+}
+
 const serverConfig = {
   entry: "./server.ts",
   devtool: false,
   target: 'node',
   output: {
-    path: path.resolve(__dirname, "dist"),
+    path: path.resolve(__dirname, "dist/server"),
+  },
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        /**
+         * need to disable default vendor chunks because it will be loaded twice.
+         * 'eager' shared 'react' will be bundled in main chunk,
+         * and loads dynamically imported 'vendor_react' chunk
+         */
+        defaultVendors: false,
+        default: false
+      }
+    }
   },
   plugins: [
+    new WebpackManifestPlugin(),
+    new DynamicPublicPathPlugin({
+      iife: `(() => "http://localhost:3001${serverPublicPath}/")`,
+      entry: '""'
+    }),
+    new webpack.container.ModuleFederationPlugin({
+      remotes: {
+        app1: buildRemote(
+          'app1',
+          `http://localhost:3001${serverPublicPath}/app1/remoteEntry.js`
+        ),
+        app2: buildRemote(
+          'app2',
+          `http://localhost:3002${serverPublicPath}/app2/remoteEntry.js`
+        )
+      },
+      shared: {
+        react: {
+          singleton: true,
+          eager: true,
+          requiredVersion: false,
+        }
+      },
+    }),
     // Add your plugins here
     // Learn more about plugins from https://webpack.js.org/configuration/plugins/
   ],
@@ -195,7 +324,7 @@ const serverConfig = {
     'node-fetch': 'require("node-fetch")'
   },
   resolve: {
-    extensions: [".tsx", ".ts", ".js"],
+    extensions: [".tsx", ".ts", ".js"]
   },
 }
 
@@ -205,7 +334,9 @@ module.exports = () => {
     mode = 'production'
     clientConfig.plugins.push(new MiniCssExtractPlugin());
   }
+  federatedModuleConfig.mode = mode;
   clientConfig.mode = mode;
+  serverFederatedModuleConfig.mode = mode;
   serverConfig.mode = mode;
-  return [federatedModuleConfig, clientConfig, serverConfig];
+  return [federatedModuleConfig, clientConfig, serverFederatedModuleConfig, serverConfig];
 };

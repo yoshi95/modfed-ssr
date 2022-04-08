@@ -4,8 +4,11 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const DynamicPublicPathPlugin = require('../plugins/dynamic-public-path-plugin')
 const webpack = require('webpack')
+
+const DynamicPublicPathPlugin = require('../plugins/dynamic-public-path-plugin')
+const PreloadRemoteDependenciesPlugin = require('../plugins/preload-remote-dependencies-plugin')
+const buildRemote = require('../plugins/remote-entry-builder')
 
 const isProduction = process.env.NODE_ENV == "production";
 
@@ -166,28 +169,12 @@ const clientConfig = {
   },
 };
 
-const buildRemote = (name, url) => `promise new Promise((resolve, reject) => {
-  const fetch = require('fetch');
-  const vm = require('vm');
-  fetch('${url}')
-    .then(res => res.text())
-    .then(code => {
-      const context = {};
-      const script = new vm.Script(
-        code, 
-        { filename: 'remote-entry-${name}.js' }
-      )
-      script.runInContext(context);
-      resolve(context['${name}'])
-    })
-    .catch(err => reject(err))
-})`
 const serverFederatedModuleConfig = {
   entry: "./noop.tsx",
   devtool: false,
-  target: 'async-node',
+  target: 'node',
   output: {
-    chunkFormat: 'commonjs',
+    chunkFormat: false, // disable default chunk format
     publicPath: `${serverPublicPath}/app1`,
     path: path.resolve(__dirname, "dist/server/app1"),
   },
@@ -200,6 +187,9 @@ const serverFederatedModuleConfig = {
     new webpack.container.ModuleFederationPlugin({
       name: 'app1',
       filename: 'remoteEntry.js',
+      library: {
+        type: 'commonjs2'
+      },
       remotes: {
         app2: buildRemote(
           'app2',
@@ -212,15 +202,19 @@ const serverFederatedModuleConfig = {
       },
       shared: {
         react: {
+          import: false,
           requiredVersion: false,
           singleton: true,
-        },
-        'react-dom/server': {
-          requiredVersion: false,
-          singleton: true,
-        },
+        }
       },
     }),
+    // limit remoteEntry cunk to be 1, because this is for server
+    new webpack.optimize.LimitChunkCountPlugin({
+      maxChunks: 2
+    }),
+    // needs to preload remote dependencies now remoteEntry is bundled into 1 chunk
+    new PreloadRemoteDependenciesPlugin()
+  
     // Add your plugins here
     // Learn more about plugins from https://webpack.js.org/configuration/plugins/
   ],
@@ -287,7 +281,6 @@ const serverConfig = {
       iife: `(() => "http://localhost:3001${serverPublicPath}/")`,
       entry: '""'
     }),
-    /*
     new webpack.container.ModuleFederationPlugin({
       remotes: {
         app2: buildRemote(
@@ -300,15 +293,9 @@ const serverConfig = {
           singleton: true,
           eager: true,
           requiredVersion: false,
-        },
-        'react-dom/server': {
-          singleton: true,
-          eager: true,
-          requiredVersion: false,
-        },
+        }
       },
     }),
-    */
     // Add your plugins here
     // Learn more about plugins from https://webpack.js.org/configuration/plugins/
   ],
@@ -340,9 +327,11 @@ const serverConfig = {
   },
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
+    /*
     fallback: {
       'app2/useApp2ConsoleMessage': path.resolve(__dirname, './noop.tsx'),
     }
+    */
   },
 }
 
@@ -354,9 +343,12 @@ module.exports = () => {
   }
   clientConfig.mode = mode;
   serverConfig.mode = mode;
+  federatedModuleConfig.mode = mode;
+  serverFederatedModuleConfig.mode = mode;
   return [
     federatedModuleConfig,
     clientConfig,
+    serverFederatedModuleConfig,
     serverConfig
   ];
 };
