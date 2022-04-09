@@ -322,16 +322,9 @@ const serverConfig = {
   externals: {
     express: 'require("express")',
     'node-fetch': 'require("node-fetch")',
-    // react: 'require("react")',
-    // 'react-dom/server': 'require("react-dom/server")'
   },
   resolve: {
     extensions: [".tsx", ".ts", ".js"],
-    /*
-    fallback: {
-      'app2/useApp2ConsoleMessage': path.resolve(__dirname, './noop.tsx'),
-    }
-    */
   },
 }
 

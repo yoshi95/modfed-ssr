@@ -7,6 +7,16 @@
   https://gist.github.com/ScriptedAlchemy/60d0c49ce049184f6ce3e86ca351fdca
 */
 
+/** @typedef {import("webpack").Module} Module */
+/** @typedef {import("webpack").Chunk} Chunk */
+/** @typedef {import("webpack").Compiler} Compiler */
+
+/**
+ * @typedef {Object} DynamicContainerPathPluginOptions
+ * @property {string} iife - An immediately invoked function expression to get
+ * @property {string} entry - The entry point name of the application.
+ */
+
 /**
  * Change `publicPath` at run time rather than build time for dynamic module federated containers.
  * This allows builds to be environment agnostic and have `publicPath` update via the supplied run-time configuration.
@@ -14,8 +24,7 @@
  */
 class DynamicContainerPathPlugin {
   /**
-   * @param {options.iffe} immediatelyInvokedFunctionExpression - An immediately invoked function expression to get `publicPath` at runtime.
-   * @param {options.entry} thisApplicationsMainEntryPoint - The entry point name of the application.
+   * @param {DynamicContainerPathPluginOptions} options
    */
   constructor(options) {
     // validate options being passed through the plugin
@@ -24,6 +33,11 @@ class DynamicContainerPathPlugin {
     this.options = options;
   }
 
+  /**
+   * 
+   * @param {Module} module 
+   * @returns {string}
+   */
   getInternalPublicPathVariable(module) {
     /*
       Strip out 'publicPath's' value '/' using webpack's internal global variable set
@@ -38,6 +52,12 @@ class DynamicContainerPathPlugin {
     return [publicPath];
   }
 
+  /**
+   * 
+   * @param {Module} module 
+   * @param {string} publicPath 
+   * @returns {Module}
+   */
   setNewPublicPathValueFromRuntime(module, publicPath) {
     /*
       By default, 'module._cachedGeneratedCode' is equal to '__webpack_require__.p = "/";' at build time
@@ -48,12 +68,22 @@ class DynamicContainerPathPlugin {
     return module;
   }
 
+  /**
+   * 
+   * @param {Module} module 
+   * @param {Chunk} chunk 
+   * @returns {Module}
+   */
   changePublicPath(module, chunk) {
     console.log(`Changing static publicPath for chunk: ${chunk.name}`);
     const publicPath = this.getInternalPublicPathVariable(module);
     return this.setNewPublicPathValueFromRuntime(module, publicPath);
   }
 
+  /**
+   * 
+   * @param {Compiler} compiler 
+   */
   apply(compiler) {
     /*
       Tap into execution before finishing the compilation.
