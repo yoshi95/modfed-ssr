@@ -1,7 +1,15 @@
 const SingleChunkRemoteRuntimeModule = require('./SingleChunkremoteRuntimeModule')
 const containerEntryCodeGenOverride = require('./containerEntryCodeGenOverride')
+const getRemoteChunkMap = require('./get-module-mapping')
 
+/**
+ * @typedef {import('webpack').Compiler} Compiler
+ */
 class PreloadRemoteDependenciesPlugin {
+  /**
+   * 
+   * @param {Compiler} compiler 
+   */
   apply(compiler) {
     compiler.hooks.compilation.tap(
       "SingleChunkRemoteRuntimeCheckPlugin",
@@ -24,42 +32,7 @@ class PreloadRemoteDependenciesPlugin {
             return true;
           });
 
-        function getRemoteChunkMap(chunk, chunkGraph) {
-          const modules = Array.from(chunk.groupsIterable)
-            .reduce((result, chunkGroup) => [...result, ...chunkGroup.chunks],[])
-            .reduce((result, groupChunk) => [
-              ...result,
-              ...Array.from(chunkGraph.getChunkModulesIterableBySourceType(
-                groupChunk,
-                "remote"
-              ) || [])
-            ], []);
-
-          if (!modules || !modules.length) return {};
-
-          const chunkToRemotesMapping = {};
-          const idToExternalAndNameMapping = {};
-          const { moduleGraph } = chunkGraph;
-          const remotes = (chunkToRemotesMapping[chunk.id] = []);
-
-          for (const m of modules) {
-            const module = m;
-            const name = module.internalRequest;
-            const id = chunkGraph.getModuleId(module);
-            const shareScope = module.shareScope;
-            const dep = module.dependencies[0];
-            const externalModule = moduleGraph.getModule(dep);
-            const externalModuleId =
-              externalModule && chunkGraph.getModuleId(externalModule);
-            remotes.push(id);
-            idToExternalAndNameMapping[id] = [shareScope, name, externalModuleId];
-          }
-
-          return {
-            chunkToRemotesMapping,
-            idToExternalAndNameMapping
-          }
-        }
+        
         compilation.hooks.beforeCodeGeneration
           .tap("SingleChunkRemoteRuntimeCheckPlugin", () => {
             const { chunkGraph, chunks } = compilation
@@ -77,7 +50,7 @@ class PreloadRemoteDependenciesPlugin {
               
               if (!chunkToRemotesMapping || Object.keys(chunkToRemotesMapping).length === 0) return;
 
-              modules.forEach(mod => {
+              Array.from(modules).forEach(mod => {
                 mod.codeGeneration = containerEntryCodeGenOverride({
                   runtimeName: singleChunkRemoteRuntime,
                   chunkToRemotesMapping,
@@ -108,6 +81,10 @@ class PreloadRemoteDependenciesPlugin {
 
           }
         )
+
+
+
+        
       }
     )
         

@@ -6,19 +6,17 @@ const buildRemote = (name, url) => `promise (() => {
   }
   const remotePromise = globalThis.fetchedRemotes['${name}'] = new Promise((resolve, reject) => {
     const fetch = require('node-fetch');
-    const vm = require('vm');
+    const Module = require('module');
     
+    console.log('==== fetching remote ${name}: ${url}');
     fetch('${url}')
       .then(res => res.text())
       .then(code => {
-        const module = { exports: undefined }
-        const context = vm.createContext({ module, require, __dirname, fetchedRemotes: globalThis.fetchedRemotes })
-        const script = new vm.Script(
-          code, 
-          { filename: 'remote-entry-${name}.js' }
-        )
-        script.runInContext(context);
-        resolve(module.exports)
+        const filename = 'remote-entry-${name}.js';
+        const m = new Module(filename, module.parent);
+        m.filename = filename;
+        m._compile(code, filename);
+        resolve(m.exports)
       })
       .catch(err => reject(err))
   });

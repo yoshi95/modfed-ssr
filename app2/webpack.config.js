@@ -7,7 +7,8 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require('webpack')
 
 const DynamicPublicPathPlugin = require('../plugins/dynamic-public-path-plugin')
-const PreloadRemoteDependenciesPlugin = require('../plugins/preload-remote-dependencies-plugin')
+const PreloadRemoteDependenciesPlugin = require('../plugins/preload-remote-dependencies-plugin');
+const FlushExternalRuntimePlugin = require('../plugins/flush-external-plugin')
 const buildRemote = require('../plugins/remote-entry-builder');
 
 const isProduction = process.env.NODE_ENV == "production";
@@ -296,6 +297,7 @@ const serverConfig = {
         }
       },
     }),
+    new FlushExternalRuntimePlugin(),
     // Add your plugins here
     // Learn more about plugins from https://webpack.js.org/configuration/plugins/
   ],

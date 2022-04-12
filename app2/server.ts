@@ -9,6 +9,11 @@ let fetchAssetManifest: Promise<Record<string, string>>;
 app.use('/static', express.static('dist/static'))
 app.use('/server', express.static('dist/server'))
 
+app.get('/flush', (req: Request, res: Response) => {
+  __webpack_require__.flushExternals();
+  res.send('ok')
+})
+
 app.get('/', async (req: Request, res: Response) => {
   // maybe get data
   const manifest = await fetchAssetManifest as Record<string, string>
